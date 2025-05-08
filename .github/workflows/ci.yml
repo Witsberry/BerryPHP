@@ -35,13 +35,12 @@ jobs:
         php-config --includes
         find /usr/include/php -name zend_fiber.h || echo "zend_fiber.h not found"
         ls -l /usr/include/php/*/Zend/ || echo "No Zend directory found"
+        cat berryrt/configure.ac
+        ls -l berryrt/m4/ || echo "m4 directory not found"
 
-    - name: Setup PHP 8.4
-      uses: shivammathur/setup-php@v2
-      with:
-        php-version: '8.4'
-        extensions: redis,mysql
-        tools: composer
+    - name: Create m4 Directory
+      run: |
+        mkdir -p berryrt/m4
 
     - name: Build berryrt
       run: |

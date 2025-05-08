@@ -26,6 +26,9 @@ if [ -z "$ZEND_FIBER_H" ]; then
     fi
 fi
 
+# Create m4 directory
+mkdir -p berryrt/m4
+
 cd berryrt
 autoreconf -fi
 phpize
