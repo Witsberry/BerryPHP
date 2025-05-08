@@ -1,0 +1,120 @@
+#!/bin/bash
+# BerryPHP/berryphp-cli/berryphp
+# CLI tool for managing BerryPHP projects.
+# Author: Rikaz Zarook, Witsberry
+
+CONFIG_FILE="berryphp.json"
+REGISTRY_URL="http://packages.berryphp.dev"
+
+init() {
+    echo "Initializing BerryPHP project..."
+    mkdir -p src tests lang views vendor packages
+    cat > berryphp.json << EOL
+{
+    "name": "berryphp-app",
+    "version": "1.0.0",
+    "dependencies": {}
+}
+EOL
+    cat > composer.json << EOL
+{
+    "name": "witsberry/app",
+    "description": "A BerryPHP application",
+    "require": {
+        "php": ">=8.1",
+        "witsberry/berryphp": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    }
+}
+EOL
+    cat > views/welcome.berry << EOL
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Welcome to BerryPHP</title>
+</head>
+<body>
+    <h1>Welcome, {{ \$name }}!</h1>
+    <p>{{ trans('welcome') }}</p>
+    <p>Powered by BerryPHP, created by Rikaz Zarook, Witsberry.</p>
+</body>
+</html>
+EOL
+    cat > lang/en.json << EOL
+{
+    "welcome": "Welcome to BerryPHP, :name!"
+}
+EOL
+    echo "Project initialized. Run 'berryphp install' to install dependencies."
+}
+
+install() {
+    echo "Installing BerryPHP dependencies..."
+    if [ -f "$CONFIG_FILE" ]; then
+        dependencies=$(jq -r '.dependencies | keys[]' "$CONFIG_FILE")
+        for dep in $dependencies; do
+            version=$(jq -r ".dependencies.\"$dep\"" "$CONFIG_FILE")
+            echo "Installing $dep@$version..."
+            curl -s "$REGISTRY_URL/$dep/$version.tar.gz" | tar -xz -C packages
+        done
+    fi
+    echo "Installing Composer dependencies..."
+    if [ -f "composer.json" ]; then
+        if ! command -v composer &> /dev/null; then
+            echo "Composer not found. Installing..."
+            php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+            php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+            rm composer-setup.php
+        fi
+        composer install --no-dev --optimize-autoloader
+    fi
+}
+
+add() {
+    if [[ "$1" == composer:* ]]; then
+        package=${1#composer:}
+        echo "Adding Composer package $package..."
+        composer require "$package"
+    else
+        package=$1
+        version=${2:-latest}
+        echo "Adding BerryPHP package $package@$version..."
+        if [ ! -f "$CONFIG_FILE" ]; then
+            echo "{\"name\": \"berryphp-app\", \"version\": \"1.0.0\", \"dependencies\": {}}" > "$CONFIG_FILE"
+        fi
+        curl -s "$REGISTRY_URL/$package/$version.tar.gz" | tar -xz -C packages
+        jq ".dependencies.\"$package\" = \"$version\"" "$CONFIG_FILE" > tmp.json && mv tmp.json "$CONFIG_FILE"
+    fi
+}
+
+publish() {
+    package=$1
+    version=$2
+    echo "Publishing $package@$version..."
+    tar -czf "$package-$version.tar.gz" src
+    curl -X POST -F "package=@$package-$version.tar.gz" "$REGISTRY_URL/publish"
+    rm "$package-$version.tar.gz"
+}
+
+case "$1" in
+    init)
+        init
+        ;;
+    install)
+        install
+        ;;
+    add)
+        add "$2" "$3"
+        ;;
+    publish)
+        publish "$2" "$3"
+        ;;
+    *)
+        echo "Usage: berryphp <init|install|add|publish> [args]"
+        exit 1
+        ;;
+esac

@@ -1,0 +1,15 @@
+<!-- BerryPHP/berryphp/views/welcome.berry -->
+<!-- Sample BerryView template -->
+<!-- Author: Rikaz Zarook, Witsberry -->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Welcome to BerryPHP</title>
+</head>
+<body>
+    <h1>Welcome, {{ $name }}!</h1>
+    <p>{{ trans('welcome') }}</p>
+    <p>Powered by BerryPHP, created by Rikaz Zarook, Witsberry.</p>
+</body>
+</html>

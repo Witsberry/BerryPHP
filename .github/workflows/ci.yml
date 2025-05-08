@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.1'
+        extensions: redis,mysql
+
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libuv1-dev libhttp-parser-dev libnghttp2-dev libwebsockets-dev libmysqlclient-dev libhiredis-dev
+        cd berryrt
+        phpize
+        ./configure
+        make
+        sudo make install
+        cd ../berryphp
+        composer install
+
+    - name: Run Tests
+      run: |
+        cd berryphp
+        ../run.sh tests/composer.php &
+        sleep 2
+        curl http://localhost:3000
+        ../run.sh tests/view.php &
+        sleep 2
+        curl http://localhost:3000
