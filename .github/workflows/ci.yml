@@ -11,7 +11,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Clear Cache
+      run: |
+        rm -rf $GITHUB_WORKSPACE/.cache
+        echo "Cleared GitHub Actions cache"
 
     - name: Add Ondřej PPA
       run: |
@@ -35,6 +43,9 @@ jobs:
         php-config --includes
         find /usr/include/php -name zend_fiber.h || echo "zend_fiber.h not found"
         ls -l /usr/include/php/*/Zend/ || echo "No Zend directory found"
+        echo "configure.ac line count:"
+        wc -l berryrt/configure.ac
+        echo "configure.ac contents:"
         cat berryrt/configure.ac
         ls -l berryrt/m4/ || echo "m4 directory not found"
 
