@@ -12,34 +12,38 @@ AC_PROG_CC
 AC_PROG_CXX
 LT_INIT
 
-# Checks for PHP
+# Checks for PHP tools
 AC_CHECK_PROG(PHPIZE, phpize, phpize)
 if test -z "$PHPIZE"; then
     AC_MSG_ERROR([phpize not found, please install PHP 8.4 development tools])
 fi
 
-# Find PHP include path using php-config
 AC_CHECK_PROG(PHP_CONFIG, php-config, php-config)
 if test -z "$PHP_CONFIG"; then
     AC_MSG_ERROR([php-config not found, please install php8.4-dev])
 fi
 
+PHP_INCLUDE_DIR=`$PHP_CONFIG --include-dir`
 PHP_INCLUDE_PATH=`$PHP_CONFIG --includes`
-if test -z "$PHP_INCLUDE_PATH"; then
-    AC_MSG_ERROR([Could not determine PHP include path])
+
+if test -z "$PHP_INCLUDE_PATH" || test -z "$PHP_INCLUDE_DIR"; then
+    AC_MSG_ERROR([Could not determine PHP include paths])
 fi
 
-# Checks for zend_fiber.h with fallback paths
+# Check for zend_fiber.h in PHP include directory
+AC_CHECK_FILE([$PHP_INCLUDE_DIR/Zend/zend_fiber.h], [FOUND_FIBER_H=yes], [
+    AC_MSG_ERROR([zend_fiber.h not found in $PHP_INCLUDE_DIR/Zend; ensure php8.4-dev is installed])
+])
+
+# Add PHP includes to CFLAGS
 SAVE_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $PHP_INCLUDE_PATH -I/usr/include/php/20240829 -I/usr/include/php/20240829/Zend -I/usr/include/php/20240924 -I/usr/include/php/20240924/Zend"
-AC_CHECK_FILE([/usr/include/php/20240829/Zend/zend_fiber.h], [FOUND_FIBER_H=yes], [
-    AC_CHECK_FILE([/usr/include/php/20240924/Zend/zend_fiber.h], [FOUND_FIBER_H=yes], [
-        AC_MSG_ERROR([zend_fiber.h not found in $PHP_INCLUDE_PATH, /usr/include/php/20240829/Zend, or /usr/include/php/20240924/Zend; ensure php8.4-dev is installed])
-    ])
-])
+CFLAGS="$CFLAGS $PHP_INCLUDE_PATH"
+
+# Check for headers
 AC_CHECK_HEADER([Zend/zend_fiber.h], [], [
-    AC_MSG_ERROR([zend_fiber.h header check failed, ensure php8.4-dev is installed])
+    AC_MSG_ERROR([zend_fiber.h header check failed])
 ])
+
 CFLAGS="$SAVE_CFLAGS"
 
 # Checks for libraries
@@ -50,6 +54,6 @@ AC_CHECK_LIB([websockets], [lws_create_context], [], [AC_MSG_ERROR([libwebsocket
 AC_CHECK_LIB([mysqlclient], [mysql_init], [], [AC_MSG_ERROR([mysqlclient not found])])
 AC_CHECK_LIB([hiredis], [redisConnect], [], [AC_MSG_ERROR([hiredis not found])])
 
-# Generate files
+# Generate Makefile
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
