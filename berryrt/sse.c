@@ -11,17 +11,15 @@ typedef struct {
     long client_fd;
 } sse_client_t;
 
-/* SSE timer callback */
 static void sse_timer_cb(uv_timer_t *handle) {
     sse_client_t *client = handle->data;
     zval params[1];
-    ZVAL_LONG(&params[0], client->client_fd);
+    ZVAL_LONG(¶ms[0], client->client_fd);
     zval result;
     zend_call_function(&client->callback, NULL, &result, 1, params);
     zval_ptr_dtor(&result);
 }
 
-/* Initialize SSE */
 PHP_FUNCTION(berry_sse_init) {
     zval *loop_ptr, *callback;
     long client_fd;

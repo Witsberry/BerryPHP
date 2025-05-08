@@ -3,7 +3,7 @@
     "description": "High-performance PHP framework by Rikaz Zarook",
     "type": "library",
     "require": {
-        "php": ">=8.1",
+        "php": ">=8.4",
         "ext-berryrt": "*",
         "monolog/monolog": "^3.0"
     },

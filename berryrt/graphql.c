@@ -10,7 +10,6 @@ typedef struct {
     zval callback;
 } graphql_query_t;
 
-/* Parse GraphQL query */
 PHP_FUNCTION(berry_graphql_parse) {
     zval *loop_ptr;
     char *query;

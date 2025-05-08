@@ -5,7 +5,7 @@
 
 cd berryrt
 phpize
-./configure
+./configure --with-php-config=$(which php-config)
 make clean
 make -j$(nproc)
 sudo make install

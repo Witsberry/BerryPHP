@@ -15,8 +15,8 @@ static int ws_callback(struct lws *wsi, enum lws_callback_reasons reason, void *
     ws_server_t *server = (ws_server_t *)user;
     if (reason == LWS_CALLBACK_RECEIVE) {
         zval params[2];
-        ZVAL_LONG(&params[0], (zend_long)wsi);
-        ZVAL_STRINGL(&params[1], in, len);
+        ZVAL_LONG(¶ms[0], (zend_long)wsi);
+        ZVAL_STRINGL(¶ms[1], in, len);
         zval result;
         zend_call_function(&server->callback, NULL, &result, 2, params);
         zval_ptr_dtor(&result);
@@ -24,7 +24,6 @@ static int ws_callback(struct lws *wsi, enum lws_callback_reasons reason, void *
     return 0;
 }
 
-/* Initialize WebSocket server */
 PHP_FUNCTION(berry_ws_init) {
     zval *loop_ptr, *callback;
     long port;

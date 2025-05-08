@@ -4,10 +4,12 @@
 
 #include <php.h>
 #include <mysql.h>
+#include <zend_fiber.h>
 
 typedef struct {
     MYSQL *conn;
     zval callback;
+    zend_fiber_t *fiber;
 } db_query_t;
 
 /* Query callback */
@@ -26,11 +28,14 @@ static void db_query_cb(uv_async_t *handle) {
         add_next_index_zval(&rows, &r);
     }
     zval params[1];
-    ZVAL_ZVAL(&params[0], &rows, 1, 0);
+    ZVAL_ZVAL(¶ms[0], &rows, 1, 0);
     zval result;
     zend_call_function(&query->callback, NULL, &result, 1, params);
     zval_ptr_dtor(&result);
     mysql_free_result(res);
+    if (query->fiber) {
+        zend_fiber_resume(query->fiber, NULL, 0);
+    }
     efree(query);
 }
 
@@ -48,10 +53,14 @@ PHP_FUNCTION(berry_db_query) {
     db_query_t *q = emalloc(sizeof(db_query_t));
     q->conn = conn;
     ZVAL_COPY(&q->callback, callback);
+    q->fiber = zend_fiber_current();
     mysql_query(conn, query);
     uv_async_t async;
     async.data = q;
     uv_async_init((uv_loop_t *)Z_PTR_P(loop_ptr), &async, db_query_cb);
     uv_async_send(&async);
+    if (q->fiber) {
+        zend_fiber_suspend();
+    }
     RETURN_TRUE;
 }

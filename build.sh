@@ -1,14 +1,14 @@
 #!/bin/bash
 # BerryPHP/build.sh
-# Builds BerryPHP and berryrt extension.
+# Builds BerryPHP and berryrt extension for PHP 8.4.
 # Author: Rikaz Zarook, Witsberry
 
-echo "Building BerryPHP..."
+echo "Building BerryPHP for PHP 8.4..."
 
 # Build berryrt
 cd berryrt
 phpize
-./configure
+./configure --with-php-config=$(which php-config)
 make clean
 make -j$(nproc)
 sudo make install

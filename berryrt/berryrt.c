@@ -33,16 +33,35 @@ PHP_FUNCTION(berry_loop_run) {
     uv_run(loop, UV_RUN_DEFAULT);
 }
 
-/* JIT optimization (basic opcache config) */
+/* JIT optimization */
 PHP_FUNCTION(berry_jit_optimize) {
     zval *loop_ptr;
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "z", &loop_ptr) == FAILURE) {
         return;
     }
-    /* Enable JIT in opcache */
     zend_string *ini = zend_string_init("opcache.jit_buffer_size", 21, 0);
     zend_alter_ini_entry_chars(ini, "100M", 4, PHP_INI_SYSTEM, PHP_INI_STAGE_RUNTIME);
     zend_string_release(ini);
+    RETURN_TRUE;
+}
+
+/* Cluster fork for multi-core scaling */
+PHP_FUNCTION(berry_cluster_fork) {
+    zval *loop_ptr, *callback;
+    long port, workers;
+    zend_bool use_tls;
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "zlzlb", &loop_ptr, &port, &callback, &workers, &use_tls) == FAILURE) {
+        return;
+    }
+    uv_loop_t *loop = (uv_loop_t *)Z_PTR_P(loop_ptr);
+    for (int i = 0; i < workers; i++) {
+        pid_t pid = fork();
+        if (pid == 0) {
+            berry_http_create(loop, port, callback, use_tls);
+            uv_run(loop, UV_RUN_DEFAULT);
+            exit(0);
+        }
+    }
     RETURN_TRUE;
 }
 

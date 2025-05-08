@@ -10,17 +10,21 @@ typedef struct {
     uv_fs_t req;
     zval callback;
     char *buffer;
+    zend_fiber_t *fiber;
 } async_file_t;
 
 /* File read callback */
 static void async_file_read_cb(uv_fs_t *req) {
     async_file_t *file = req->data;
     zval params[1];
-    ZVAL_STRINGL(&params[0], file->buffer, req->result);
+    ZVAL_STRINGL(¶ms[0], file->buffer, req->result);
     zval result;
     zend_call_function(&file->callback, NULL, &result, 1, params);
     zval_ptr_dtor(&result);
     efree(file->buffer);
+    if (file->fiber) {
+        zend_fiber_resume(file->fiber, NULL, 0);
+    }
     efree(file);
     uv_fs_req_cleanup(req);
 }
@@ -39,6 +43,10 @@ PHP_FUNCTION(berry_async_file_read) {
     ZVAL_COPY(&file->callback, callback);
     file->buffer = emalloc(8192);
     file->req.data = file;
+    file->fiber = zend_fiber_current();
     uv_fs_read(loop, &file->req, uv_fs_open(loop, &file->req, path, O_RDONLY, 0, NULL), file->buffer, 8192, -1, async_file_read_cb);
+    if (file->fiber) {
+        zend_fiber_suspend();
+    }
     RETURN_TRUE;
 }

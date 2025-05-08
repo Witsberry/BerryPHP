@@ -17,10 +17,10 @@ cd BerryPHP
 ./build.sh
 cd berryphp
 composer install
-```
 
-## Getting Started
-```php
+Getting Started
+php
+
 <?php
 require_once 'vendor/autoload.php';
 require_once 'berryphp/src/App.php';
@@ -32,58 +32,50 @@ $app = new App();
 $app->get('/', fn($req, $res) => $res->view('welcome', ['name' => 'User']));
 
 $app->listen(3000, fn() => echo "Running on port 3000\n");
-```
 
-# Using Composer
-```bash
+Using Composer
+bash
+
 berryphp add composer:monolog/monolog
-# OR
-composer require monolog/monolog
-```
 
-# Using BerryView
+Using BerryView
 In views/welcome.berry:
+html
 
-```html
 <h1>Welcome, {{ $name }}!</h1>
 <p>{{ trans('welcome') }}</p>
-```
 
 Render:
-```php
+php
+
 $app->get('/', fn($req, $res) => $res->view('welcome', ['name' => 'User']));
-```
 
-# Documentation
+Documentation
 See docs/.
-
-# Community
+Community
 Forum
 
 GitHub
 
 Packages
 
-# License
-MIT License (see LICENSE)
+Requirements
+PHP 8.4
 
+libuv, http-parser, nghttp2, libwebsockets, mysqlclient, hiredis
+
+License
+MIT License (see LICENSE)
 
 **BerryPHP/CHANGELOG.md**
 ```markdown
 # Changelog
 
+## 1.0.1 - 2025-05-08
+- Updated for PHP 8.4, ensuring `zend_fiber.h` is found.
+- Fixed build process with correct include paths.
+- Updated CI to use PHP 8.4.
+
 ## 1.0.0 - 2025-05-08
 - Initial release by Rikaz Zarook, Witsberry.
-- Features:
-  - HTTP/1.1, HTTP/2, WebSocket, SSE, GraphQL.
-  - Async I/O for files, networks, MySQL, PostgreSQL, Redis.
-  - BerryView templating.
-  - Auth, RBAC, i18n, rate limiting, metrics, logging.
-  - Composer support.
-  - Clustering, load balancing, serverless.
-  - Package manager and registry.
-  - Documentation and CI/CD.
-
-
-
 

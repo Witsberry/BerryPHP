@@ -13,17 +13,50 @@ typedef struct {
     int use_tls;
 } http_server_t;
 
-/* HTTP parser callback */
-static int on_message_complete(http_parser *parser) {
-    http_server_t *server = parser->data;
-    zval params[3];
-    ZVAL_LONG(&params[0], parser->data); // Client FD
-    ZVAL_STRING(&params[1], http_method_str(parser->method));
-    ZVAL_STRING(&params[2], parser->data); // Path
-    zval result;
-    zend_call_function(&server->callback, NULL, &result, 3, params);
-    zval_ptr_dtor(&result);
+/* Client connection data */
+typedef struct {
+    uv_tcp_t *client;
+    http_parser parser;
+    zval *callback;
+    char *path;
+} http_client_t;
+
+/* HTTP parser callbacks */
+static int on_url(http_parser *parser, const char *at, size_t length) {
+    http_client_t *client = parser->data;
+    client->path = estrndup(at, length);
     return 0;
+}
+
+static int on_message_complete(http_parser *parser) {
+    http_client_t *client = parser->data;
+    zval params[3];
+    ZVAL_LONG(¶ms[0], (zend_long)client->client);
+    ZVAL_STRING(¶ms[1], http_method_str(parser->method));
+    ZVAL_STRING(¶ms[2], client->path);
+    zval result;
+    zend_call_function(client->callback, NULL, &result, 3, params);
+    zval_ptr_dtor(&result);
+    efree(client->path);
+    return 0;
+}
+
+/* Client connection callback */
+static void on_connect(uv_stream_t *server, int status) {
+    if (status < 0) return;
+    
+    http_server_t *http_server = server->data;
+    http_client_t *client = emalloc(sizeof(http_client_t));
+    client->client = emalloc(sizeof(uv_tcp_t));
+    client->callback = &http_server->callback;
+    uv_tcp_init(server->loop, client->client);
+    uv_accept(server, (uv_stream_t *)client->client);
+    
+    http_parser_settings settings = {0};
+    settings.on_url = on_url;
+    settings.on_message_complete = on_message_complete;
+    http_parser_init(&client->parser, HTTP_REQUEST);
+    client->parser.data = client;
 }
 
 /* Create HTTP server */
@@ -41,10 +74,11 @@ PHP_FUNCTION(berry_http_create) {
     ZVAL_COPY(&server->callback, callback);
 
     uv_tcp_init(loop, &server->handle);
+    server->handle.data = server;
     struct sockaddr_in addr;
     uv_ip4_addr("0.0.0.0", port, &addr);
     uv_tcp_bind(&server->handle, (const struct sockaddr *)&addr, 0);
 
-    uv_listen((uv_stream_t *)&server->handle, 128, NULL);
+    uv_listen((uv_stream_t *)&server->handle, 128, on_connect);
     RETURN_TRUE;
 }

@@ -4,7 +4,7 @@ BerryPHP is a high-performance, event-driven PHP framework by **Rikaz Zarook**, 
 
 ## Features
 - HTTP/1.1, HTTP/2, WebSocket, SSE, GraphQL
-- Async I/O for database, file, network
+- Async I/O with PHP 8.4 Fibers for database, file, network
 - BerryView templating
 - Redis caching, MySQL/PostgreSQL
 - Clustering, load balancing
