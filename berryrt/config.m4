@@ -6,8 +6,11 @@ PHP_ARG_ENABLE(berryrt, whether to enable berryrt support,
 [  --enable-berryrt           Enable berryrt support])
 
 if test "$PHP_BERRYRT" != "no"; then
+    dnl Get PHP include path
+    PHP_EVAL_INCLINE($($PHP_CONFIG --includes))
+
     dnl Check for PHP 8.4 headers
-    AC_CHECK_HEADER([Zend/zend_fiber.h], [], [AC_MSG_ERROR([zend_fiber.h not found, PHP 8.4 required])])
+    AC_CHECK_HEADER([Zend/zend_fiber.h], [], [AC_MSG_ERROR([zend_fiber.h not found, ensure php8.4-dev is installed])])
 
     dnl Check for libraries
     PHP_CHECK_LIBRARY(uv, uv_loop_init,

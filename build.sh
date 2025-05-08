@@ -5,14 +5,22 @@
 
 echo "Building BerryPHP for PHP 8.4..."
 
-# Install Autotools dependencies
-sudo apt-get install -y autoconf automake libtool
+# Install dependencies
+sudo apt-get update
+sudo apt-get install -y autoconf automake libtool php8.4-dev libuv1-dev libhttp-parser-dev libnghttp2-dev libwebsockets-dev libmysqlclient-dev libhiredis-dev
+
+# Verify php-config
+PHP_CONFIG=$(which php-config)
+if [ -z "$PHP_CONFIG" ]; then
+    echo "php-config not found. Ensure php8.4-dev is installed."
+    exit 1
+fi
 
 # Build berryrt
 cd berryrt
 autoreconf -fi
 phpize
-./configure --with-php-config=$(which php-config)
+./configure --with-php-config="$PHP_CONFIG" CFLAGS="-I/usr/include/php/20240829 -I/usr/include/php/20240829/Zend" LDFLAGS="-L/usr/lib"
 make clean
 make -j$(nproc)
 sudo make install
