@@ -10,7 +10,14 @@ if test "$PHP_BERRYRT" != "no"; then
     PHP_EVAL_INCLINE($($PHP_CONFIG --includes))
 
     dnl Check for PHP 8.4 headers
-    AC_CHECK_HEADER([Zend/zend_fiber.h], [], [AC_MSG_ERROR([zend_fiber.h not found, ensure php8.4-dev is installed])])
+    PHP_CHECK_HEADER([Zend/zend_fiber.h], [], [
+        dnl Fallback check for common paths
+        if test -f "/usr/include/php/20240829/Zend/zend_fiber.h" || test -f "/usr/include/php/20240924/Zend/zend_fiber.h"; then
+            PHP_EVAL_INCLINE(-I/usr/include/php/20240829 -I/usr/include/php/20240829/Zend -I/usr/include/php/20240924 -I/usr/include/php/20240924/Zend)
+        else
+            AC_MSG_ERROR([zend_fiber.h not found in $($PHP_CONFIG --includes) or common paths, ensure php8.4-dev is installed])
+        fi
+    ])
 
     dnl Check for libraries
     PHP_CHECK_LIBRARY(uv, uv_loop_init,
@@ -32,6 +39,4 @@ if test "$PHP_BERRYRT" != "no"; then
         [PHP_ADD_LIBRARY_WITH_PATH(hiredis, /usr/lib, BERRYRT_SHARED_LIBADD)],
         [AC_MSG_ERROR([hiredis not found])], [-L/usr/lib])
 
-    PHP_SUBST(BERRYRT_SHARED_LIBADD)
-    PHP_NEW_EXTENSION(berryrt, berryrt.c http.c ws.c sse.c graphql.c async.c db.c redis.c, $ext_shared)
-fi
+    PHP

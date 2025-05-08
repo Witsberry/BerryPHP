@@ -13,6 +13,29 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - name: Add Ondřej PPA
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y software-properties-common
+        sudo add-apt-repository ppa:ondrej/php -y
+        sudo apt-get update
+
+    - name: Install PHP 8.4 and Dependencies
+      run: |
+        sudo apt-get install -y php8.4 php8.4-dev autoconf automake libtool libuv1-dev libhttp-parser-dev libnghttp2-dev libwebsockets-dev libmysqlclient-dev libhiredis-dev
+        # Retry php8.4-dev installation if headers are missing
+        if [ ! -f /usr/include/php/20240829/Zend/zend_fiber.h ] && [ ! -f /usr/include/php/20240924/Zend/zend_fiber.h ]; then
+          sudo apt-get install --reinstall php8.4-dev
+        fi
+
+    - name: Debug PHP Environment
+      run: |
+        php -v
+        php-config --version
+        php-config --includes
+        find /usr/include/php -name zend_fiber.h || echo "zend_fiber.h not found"
+        ls -l /usr/include/php/*/Zend/ || echo "No Zend directory found"
+
     - name: Setup PHP 8.4
       uses: shivammathur/setup-php@v2
       with:
@@ -20,19 +43,19 @@ jobs:
         extensions: redis,mysql
         tools: composer
 
-    - name: Install Dependencies
+    - name: Build berryrt
       run: |
-        sudo apt-get update
-        sudo apt-get install -y autoconf automake libtool php8.4-dev libuv1-dev libhttp-parser-dev libnghttp2-dev libwebsockets-dev libmysqlclient-dev libhiredis-dev
-        # Verify zend_fiber.h
-        find /usr/include/php -name zend_fiber.h || (echo "zend_fiber.h not found" && exit 1)
         cd berryrt
         autoreconf -fi
         phpize
-        ./configure --with-php-config=$(which php-config) CFLAGS="-I/usr/include/php/20240829 -I/usr/include/php/20240829/Zend" LDFLAGS="-L/usr/lib"
+        ./configure --with-php-config=$(which php-config) CFLAGS="-I/usr/include/php/20240829 -I/usr/include/php/20240829/Zend -I/usr/include/php/20240924 -I/usr/include/php/20240924/Zend" LDFLAGS="-L/usr/lib"
         make
         sudo make install
-        cd ../berryphp
+        cd ..
+
+    - name: Install Composer Dependencies
+      run: |
+        cd berryphp
         composer install
 
     - name: Run Tests

@@ -29,10 +29,17 @@ if test -z "$PHP_INCLUDE_PATH"; then
     AC_MSG_ERROR([Could not determine PHP include path])
 fi
 
-# Checks for zend_fiber.h
+# Checks for zend_fiber.h with fallback paths
 SAVE_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $PHP_INCLUDE_PATH"
-AC_CHECK_HEADER([Zend/zend_fiber.h], [], [AC_MSG_ERROR([zend_fiber.h not found in $PHP_INCLUDE_PATH, ensure php8.4-dev is installed])])
+CFLAGS="$CFLAGS $PHP_INCLUDE_PATH -I/usr/include/php/20240829 -I/usr/include/php/20240829/Zend -I/usr/include/php/20240924 -I/usr/include/php/20240924/Zend"
+AC_CHECK_FILE([/usr/include/php/20240829/Zend/zend_fiber.h], [FOUND_FIBER_H=yes], [
+    AC_CHECK_FILE([/usr/include/php/20240924/Zend/zend_fiber.h], [FOUND_FIBER_H=yes], [
+        AC_MSG_ERROR([zend_fiber.h not found in $PHP_INCLUDE_PATH, /usr/include/php/20240829/Zend, or /usr/include/php/20240924/Zend; ensure php8.4-dev is installed])
+    ])
+])
+AC_CHECK_HEADER([Zend/zend_fiber.h], [], [
+    AC_MSG_ERROR([zend_fiber.h header check failed, ensure php8.4-dev is installed])
+])
 CFLAGS="$SAVE_CFLAGS"
 
 # Checks for libraries
