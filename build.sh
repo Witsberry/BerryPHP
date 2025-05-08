@@ -5,8 +5,12 @@
 
 echo "Building BerryPHP for PHP 8.4..."
 
+# Install Autotools dependencies
+sudo apt-get install -y autoconf automake libtool
+
 # Build berryrt
 cd berryrt
+autoreconf -fi
 phpize
 ./configure --with-php-config=$(which php-config)
 make clean

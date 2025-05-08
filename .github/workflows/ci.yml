@@ -23,8 +23,9 @@ jobs:
     - name: Install Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libuv1-dev libhttp-parser-dev libnghttp2-dev libwebsockets-dev libmysqlclient-dev libhiredis-dev
+        sudo apt-get install -y autoconf automake libtool libuv1-dev libhttp-parser-dev libnghttp2-dev libwebsockets-dev libmysqlclient-dev libhiredis-dev
         cd berryrt
+        autoreconf -fi
         phpize
         ./configure --with-php-config=$(which php-config)
         make
